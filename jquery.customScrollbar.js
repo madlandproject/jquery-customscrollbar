@@ -9,66 +9,125 @@ var defaults = {
 
 $.fn.customScrollbar = function(opts)
 {
-	var options = $.extend(opts, defaults);
+	var options;
 	
-	if ( ! options.scrollElement) 
+	var self = this;
+	
+	var scrollPosition;
+	var scrollElement;
+	var $scrollElement;
+	
+	var upButton;
+	var track;
+	var thumb;
+	var downButton;
+	
+	function init()
 	{
-		throw( new Error('Plugin needs an element to scroll') );
-	}
-	
-	// tracking vars
-	var scrollPosition = options.scrollPosition;
-	
-	// get elements
-	var scrollElement = options.scrollElement;
-	var $scrollElement = $(options.scrollElement);
+		options = $.extend(opts, defaults);
 
-	var upButton   = ( options.upButton )   ? options.upButton : (this.find('.up').length > 0) ? this.find('.up') : $('<div />') ;
-	
-	var track      = ( options.track )       ? options.track : this;
-	
-	var thumb      = ( options.thumb )       ? options.thumb    : (this.find('.thumb').length > 0) ? this.find('.thumb') : $("<div />");
-																			
-	var downButton = ( options.downButton ) ? options.downButton     : (this.find('.down').length > 0) ? this.find('.down') : $("<div />");
-	
-	// attach events
-	upButton.on('click', upButtonClickHandler);
-	track.on('click', trackClickHandler);
-	thumb.on({mousedown: thumbMouseDownHandler, mouseup: thumbMouseUpHandler});
-	downButton.on('click', downButtonClickHandler);
-	
-	if ( $.event.special.mousewheel )
-	{
-		console.log("binding mousewheel");
-		$scrollElement.on({mousewheel: scrollElementMouseWheelHandler});
+		if ( ! options.scrollElement) 
+		{
+			throw( new Error('Plugin needs an element to scroll') );
+		}
+
+		// tracking vars
+		scrollPosition = options.scrollPosition;
+
+		// get elements
+		scrollElement = options.scrollElement;
+		$scrollElement = $(options.scrollElement);
+
+		upButton   = ( options.upButton )   ? options.upButton : (self.find('.up').length > 0) ? self.find('.up') : null;
+
+		track      = ( options.track )       ? options.track : self;
+
+		thumb      = ( options.thumb )       ? options.thumb    : (self.find('.thumb').length > 0) ? self.find('.thumb') : null;
+
+		downButton = ( options.downButton ) ? options.downButton     : (self.find('.down').length > 0) ? self.find('.down') : null;
+
+		// attach events
+		upButton.on({mousedown: upButtonMouseDownHandler, click: upButtonClickHandler});
+		downButton.on({mousedown: downButtonMouseDownHandler, click: downButtonClickHandler});
+
+		track.on({click: trackClickHandler});
+		thumb.on({mousedown: thumbMouseDownHandler, mouseup: thumbMouseUpHandler});
+
+		if ( $.event.special.mousewheel ) {$scrollElement.on({mousewheel: scrollElementMouseWheelHandler});}
+
+		update();	
 	}
+	
+	// general methods
 	
 	function update()
 	{
+		// frist clamp scroll pos
+		scrollPosition = (scrollPosition < 0) ? 0 : (scrollPosition > 1) ? 1 : scrollPosition;
+		
 		// update scrolled element
-		scrollElement.scrollTop = scrollElement.scrollHeight * scrollPosition;
+		scrollElement.scrollTop = (scrollElement.scrollHeight - scrollElement.clientHeight) * scrollPosition;
+		
+		// resize thumb
+		if (options.resizeThumb)
+		{
+			
+		}
 		
 		// update thumb position
-				
-		console.log(scrollElement.scrollTop);
+		var startPosition = upButton.height() + (thumb.height()/2);
+		
+		var availableHeight = track.height() - upButton.height() - thumb.height() - downButton.height();
+		
+		var pixelPosition = startPosition + Math.round(availableHeight * scrollPosition) - (thumb.height()/2);
+		
+		thumb.css('top', pixelPosition+"px" );
+		
 	}
 	
+	function mouseDownLoop()
+	{
+		
+	}
 	
 	// event handlers
-	
+	// up button
 	function upButtonClickHandler(event)
 	{
 		event.preventDefault();
 		
-		console.log("up button");
+		scrollPosition -= 0.03;
+		
+		update();
+		
 		event.stopPropagation();
 	}
 	
+	function upButtonMouseDownHandler(event)
+	{
+		event.preventDefault();
+		
+		
+		event.stopPropagation();
+	}
+	
+	// down button
 	function downButtonClickHandler(event)
 	{
 		event.preventDefault();
 		
-		console.log("down button");
+		scrollPosition += 0.03;
+			
+		update();
+		
+		event.stopPropagation();
+	}
+	
+	function downButtonMouseDownHandler(event)
+	{
+		event.preventDefault();
+		
+		
 		
 		event.stopPropagation();
 	}
@@ -76,15 +135,9 @@ $.fn.customScrollbar = function(opts)
 	function scrollElementMouseWheelHandler(event, delta, deltaX, deltaY)
 	{
 		event.preventDefault();
-		
-		console.log(scrollPosition);
-		
+				
 		scrollPosition -= (deltaY / 100);
-		console.log(scrollPosition);
-		//clamp
-		scrollPosition = (scrollPosition < 0) ? 0 : (scrollPosition > 1) ? 1 : scrollPosition;
-		
-		
+				
 		update();
 	}
 	
@@ -123,7 +176,7 @@ $.fn.customScrollbar = function(opts)
 	}
 	
 	
-	
+	init();
 	
 	console.log("Custom scrollbar init");
 };

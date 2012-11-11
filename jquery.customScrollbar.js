@@ -22,6 +22,9 @@ $.fn.customScrollbar = function(opts)
 	var thumb;
 	var downButton;
 	
+	var scrollingDirection = 0;
+	var scrollingInterval;
+	
 	function init()
 	{
 		options = $.extend(opts, defaults);
@@ -47,11 +50,11 @@ $.fn.customScrollbar = function(opts)
 		downButton = ( options.downButton ) ? options.downButton     : (self.find('.down').length > 0) ? self.find('.down') : null;
 
 		// attach events
-		upButton.on({mousedown: upButtonMouseDownHandler, click: upButtonClickHandler});
-		downButton.on({mousedown: downButtonMouseDownHandler, click: downButtonClickHandler});
+		upButton.on({mousedown: upButtonMouseDownHandler});
+		downButton.on({mousedown: downButtonMouseDownHandler});
 
-		track.on({click: trackClickHandler});
-		thumb.on({mousedown: thumbMouseDownHandler, mouseup: thumbMouseUpHandler});
+		track.on({mousedown: trackMouseDownHandler});
+		thumb.on({mousedown: thumbMouseDownHandler});
 
 		if ( $.event.special.mousewheel ) {$scrollElement.on({mousewheel: scrollElementMouseWheelHandler});}
 
@@ -62,74 +65,77 @@ $.fn.customScrollbar = function(opts)
 	
 	function update()
 	{
-		// frist clamp scroll pos
-		scrollPosition = (scrollPosition < 0) ? 0 : (scrollPosition > 1) ? 1 : scrollPosition;
-		
-		// update scrolled element
-		scrollElement.scrollTop = (scrollElement.scrollHeight - scrollElement.clientHeight) * scrollPosition;
-		
-		// resize thumb
-		if (options.resizeThumb)
-		{
-			
-		}
-		
-		// update thumb position
-		var startPosition = upButton.height() + (thumb.height()/2);
-		
-		var availableHeight = track.height() - upButton.height() - thumb.height() - downButton.height();
-		
-		var pixelPosition = startPosition + Math.round(availableHeight * scrollPosition) - (thumb.height()/2);
-		
-		thumb.css('top', pixelPosition+"px" );
-		
+		window.requestAnimationFrame(function(){
+			// frist clamp scroll pos
+			scrollPosition = (scrollPosition < 0) ? 0 : (scrollPosition > 1) ? 1 : scrollPosition;
+
+			// update scrolled element
+			scrollElement.scrollTop = (scrollElement.scrollHeight - scrollElement.clientHeight) * scrollPosition;
+
+			// resize thumb
+			if (options.resizeThumb)
+			{
+
+			}
+
+			// update thumb position
+			var startPosition = upButton.height() + (thumb.height()/2);
+
+			var availableHeight = track.height() - upButton.height() - thumb.height() - downButton.height();
+
+			var pixelPosition = startPosition + Math.round(availableHeight * scrollPosition) - (thumb.height()/2);
+
+			thumb.css('top', pixelPosition+"px" );
+		});
 	}
 	
-	function mouseDownLoop()
+	function startScrollLoop()
+	{
+		scrollingInterval = window.setInterval(function(){
+			
+			scrollPosition += (scrollingDirection * 0.01);  
+			
+			update();
+			
+		}, 33.3); // 30fps
+	}
+	
+	function stopScrollLoop()
+	{
+		scrollingDirection = 0;
+		
+		window.clearInterval( scrollingInterval );
+	}
+	
+	function stopThumbDragging()
 	{
 		
 	}
 	
 	// event handlers
-	// up button
-	function upButtonClickHandler(event)
-	{
-		event.preventDefault();
-		
-		scrollPosition -= 0.03;
-		
-		update();
-		
-		event.stopPropagation();
-	}
 	
 	function upButtonMouseDownHandler(event)
 	{
 		event.preventDefault();
-		
-		
 		event.stopPropagation();
-	}
-	
-	// down button
-	function downButtonClickHandler(event)
-	{
-		event.preventDefault();
 		
-		scrollPosition += 0.03;
-			
-		update();
+		scrollingDirection = -1;
 		
-		event.stopPropagation();
+		$(window).on('mouseup', windowMouseUpHandler);
+		
+		startScrollLoop();		
 	}
 	
 	function downButtonMouseDownHandler(event)
 	{
 		event.preventDefault();
-		
-		
-		
 		event.stopPropagation();
+		
+		scrollingDirection = 1;
+		
+		$(window).on('mouseup', windowMouseUpHandler);
+		
+		startScrollLoop();		
 	}
 	
 	function scrollElementMouseWheelHandler(event, delta, deltaX, deltaY)
@@ -141,9 +147,21 @@ $.fn.customScrollbar = function(opts)
 		update();
 	}
 	
-	function trackClickHandler(event)
+	function trackMouseDownHandler(event)
 	{
 		event.preventDefault();
+		
+		// get position
+		var mouseY = event.pageY - track.offset().top;
+		
+		var adjustedMouseY = mouseY - upButton.height() - (thumb.height() / 2);
+		var clampedHeight = track.height() - upButton.height() - downButton.height() - thumb.height();
+		
+		scrollPosition =  adjustedMouseY / clampedHeight;
+		
+		//console.log(scrollPosition);
+		
+		update();
 		
 		console.log("track click");
 	}
@@ -151,28 +169,41 @@ $.fn.customScrollbar = function(opts)
 	function thumbMouseDownHandler(event)
 	{
 		event.preventDefault();
-		console.log("thumb mouse down");
-		
-		$(window).on('mouseup', windowMouseUpHandler);
+				
+		$(window).on({mousemove: windowMouseMoveHandler, mouseup: windowMouseUpHandler});
 		
 		event.stopPropagation();
 	}
 	
-	function thumbMouseUpHandler(event)
+	
+		
+	function windowMouseMoveHandler(event)
 	{
 		event.preventDefault();
-		console.log("thumb mouse up");
 		
-		event.stopPropagation();
+		//scrollPosition = (event.pageY - track.offset().top) / track.height();
+		
+		var mouseY = event.pageY - track.offset().top;
+		
+		var adjustedMouseY = mouseY - upButton.height() - (thumb.height() / 2);
+		var clampedHeight = track.height() - upButton.height() - downButton.height() - thumb.height();
+				
+		scrollPosition =  adjustedMouseY / clampedHeight;
+		
+		update();
 	}
 	
 	function windowMouseUpHandler(event)
 	{
 		event.preventDefault();
 		
-		$(window).off('mouseup', windowMouseUpHandler);
+		// stop up/down button pressing
+		stopScrollLoop();
 		
-		console.log("window mouse up");
+		// stop dragging thumn
+		stopThumbDragging();
+		
+		$(window).off({mousemove: windowMouseMoveHandler, mouseup: windowMouseUpHandler});
 	}
 	
 	

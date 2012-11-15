@@ -2,6 +2,8 @@
 
 var console = window.console;
 
+var eventNs = 'customscrollbar';
+
 var defaults = {
 	resizeThumb: true,
 	scrollPosition: 0
@@ -27,7 +29,7 @@ $.fn.customScrollbar = function(opts)
 	
 	function init()
 	{
-		options = $.extend(opts, defaults);
+		options = $.extend({}, defaults, opts);
 
 		if ( ! options.scrollElement) 
 		{
@@ -40,7 +42,7 @@ $.fn.customScrollbar = function(opts)
 		// get elements
 		scrollElement = options.scrollElement;
 		$scrollElement = $(options.scrollElement);
-
+		
 		upButton   = ( options.upButton )   ? options.upButton : (self.find('.up').length > 0) ? self.find('.up') : null;
 
 		track      = ( options.track )       ? options.track : self;
@@ -48,15 +50,32 @@ $.fn.customScrollbar = function(opts)
 		thumb      = ( options.thumb )       ? options.thumb    : (self.find('.thumb').length > 0) ? self.find('.thumb') : null;
 
 		downButton = ( options.downButton ) ? options.downButton     : (self.find('.down').length > 0) ? self.find('.down') : null;
-
+		
+		// check if scrolling is needed
+		if (scrollElement.clientHeight >= scrollElement.scrollHeight) 
+		{
+			track.fadeOut(150);
+			return;
+		}
+		else
+		{
+			track.fadeIn(150);
+		}
+		
+		// kill events from previous plugin call
+		for (var element in [scrollElement, upButton, track, thumb, downButton, window])
+		{
+			$(element).off('.customscrollbar');	
+		}
+		
 		// attach events
-		upButton.on({mousedown: upButtonMouseDownHandler});
-		downButton.on({mousedown: downButtonMouseDownHandler});
+		upButton.on({'mousedown.customscrollbar': upButtonMouseDownHandler});
+		downButton.on({'mousedown.customscrollbar': downButtonMouseDownHandler});
 
-		track.on({mousedown: trackMouseDownHandler});
-		thumb.on({mousedown: thumbMouseDownHandler});
+		track.on({'mousedown.customscrollbar': trackMouseDownHandler});
+		thumb.on({'mousedown.customscrollbar': thumbMouseDownHandler});
 
-		if ( $.event.special.mousewheel ) {$scrollElement.on({mousewheel: scrollElementMouseWheelHandler});}
+		if ( $.event.special.mousewheel ) {$scrollElement.on({'mousewheel.customscrollbar': scrollElementMouseWheelHandler});}
 
 		update();	
 	}
@@ -64,9 +83,9 @@ $.fn.customScrollbar = function(opts)
 	// general methods
 	
 	function update()
-	{
+	{		
 		window.requestAnimationFrame(function(){
-			// frist clamp scroll pos
+			// clamp scroll pos
 			scrollPosition = (scrollPosition < 0) ? 0 : (scrollPosition > 1) ? 1 : scrollPosition;
 
 			// update scrolled element
@@ -121,7 +140,7 @@ $.fn.customScrollbar = function(opts)
 		
 		scrollingDirection = -1;
 		
-		$(window).on('mouseup', windowMouseUpHandler);
+		$(window).on({'mouseup.customscrollbar': windowMouseUpHandler});
 		
 		startScrollLoop();		
 	}
@@ -133,7 +152,7 @@ $.fn.customScrollbar = function(opts)
 		
 		scrollingDirection = 1;
 		
-		$(window).on('mouseup', windowMouseUpHandler);
+		$(window).on({'mouseup.customscrollbar': windowMouseUpHandler});
 		
 		startScrollLoop();		
 	}
@@ -159,18 +178,14 @@ $.fn.customScrollbar = function(opts)
 		
 		scrollPosition =  adjustedMouseY / clampedHeight;
 		
-		//console.log(scrollPosition);
-		
 		update();
-		
-		console.log("track click");
 	}
 	
 	function thumbMouseDownHandler(event)
 	{
 		event.preventDefault();
 				
-		$(window).on({mousemove: windowMouseMoveHandler, mouseup: windowMouseUpHandler});
+		$(window).on({'mousemove.customscrollbar': windowMouseMoveHandler, 'mouseup.customscrollbar': windowMouseUpHandler});
 		
 		event.stopPropagation();
 	}
@@ -203,13 +218,12 @@ $.fn.customScrollbar = function(opts)
 		// stop dragging thumn
 		stopThumbDragging();
 		
-		$(window).off({mousemove: windowMouseMoveHandler, mouseup: windowMouseUpHandler});
+		$(window).off('.customscrollbar');
+		
+		//$(window).off({mousemove: windowMouseMoveHandler, mouseup: windowMouseUpHandler});
 	}
 	
-	
 	init();
-	
-	console.log("Custom scrollbar init");
 };
 
 }(window, jQuery));

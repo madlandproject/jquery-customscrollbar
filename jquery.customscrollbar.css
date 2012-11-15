@@ -1,0 +1,51 @@
+#content-scrollbar
+{
+	display: block;
+	
+	position: absolute;
+	right: 24px;
+	
+	top: 82px;
+	bottom: 24px;
+	width: 26px;
+	
+	.up
+	{
+		display: block;
+		position: absolute;
+		top: 0px;
+				
+		background: url("../img/scrollbar_up.png") center center no-repeat;
+		width: 26px;
+		height: 13px;
+	}
+	
+	.thumb
+	{
+		display: block;
+		position: absolute;
+		
+		top: 14px;
+				
+		background: url("../img/scrollbar_thumb.png") center center no-repeat;
+		
+		width: 26px;
+		height: 15px;
+	
+	}
+
+	.down
+	{
+		display: block;
+		position: absolute;
+		
+		bottom: 0px;
+				
+		background: url("../img/scrollbar_down.png") center center no-repeat;
+		width: 26px;
+		height: 14px;
+		
+		
+	}
+	
+}
